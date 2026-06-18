@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -16,6 +17,8 @@ from backend.deepseek import (
 from backend.report_validation import detect_abnormal_items, validate_report
 from backend.schemas import KeyPayload, PromptPayload
 from backend.store import db
+
+MAX_REPORTS = 20
 
 app = FastAPI(title="OneMate Blood Report Interpreter")
 
@@ -56,6 +59,32 @@ def save_key(payload: KeyPayload) -> dict[str, bool]:
     return {"configured": bool(db["api_key"])}
 
 
+def save_report_history(
+    report: dict[str, Any],
+    interpretation: str,
+    abnormal_items: list[dict[str, Any]],
+) -> dict[str, Any]:
+    record = {
+        "id": str(db["next_report_id"]),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "test_name": report["test_name"],
+        "patient_id": report["patient_id"],
+        "sample_time": report["sample_time"],
+        "interpretation": interpretation,
+        "abnormal_items": abnormal_items,
+        "disclaimer": DISCLAIMER,
+    }
+    db["next_report_id"] += 1
+    db["reports"].insert(0, record)
+    del db["reports"][MAX_REPORTS:]
+    return record
+
+
+@app.get("/api/reports")
+def list_reports() -> dict[str, list[dict[str, Any]]]:
+    return {"reports": db["reports"]}
+
+
 @app.post("/api/interpret")
 async def interpret(report_payload: dict[str, Any]) -> dict[str, Any]:
     report = validate_report(report_payload)
@@ -76,8 +105,4 @@ async def interpret(report_payload: dict[str, Any]) -> dict[str, Any]:
     except (DeepSeekHTTPStatusError, DeepSeekNetworkError, DeepSeekEmptyResponseError) as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-    return {
-        "interpretation": interpretation,
-        "abnormal_items": abnormal_items,
-        "disclaimer": DISCLAIMER,
-    }
+    return save_report_history(report, interpretation, abnormal_items)

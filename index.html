@@ -242,6 +242,51 @@
         padding-bottom: 12px;
       }
 
+      .history-panel {
+        margin-top: 18px;
+      }
+
+      .history-heading {
+        align-items: flex-start;
+      }
+
+      .history-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .history-item {
+        background: #fbfdff;
+        border: 1px solid #d9e2e7;
+        border-radius: 6px;
+        color: #17212b;
+        cursor: pointer;
+        display: grid;
+        gap: 6px;
+        padding: 12px;
+        text-align: left;
+      }
+
+      .history-item:hover {
+        border-color: #167d7f;
+        box-shadow: 0 0 0 3px rgba(22, 125, 127, 0.1);
+      }
+
+      .history-item.active {
+        border-color: #167d7f;
+        background: #eefbf8;
+      }
+
+      .history-title {
+        font-weight: 800;
+      }
+
+      .history-meta {
+        color: #657586;
+        font-size: 13px;
+      }
+
       .interpretation-content h3,
       .interpretation-content h4 {
         color: #17212b;
@@ -401,6 +446,16 @@
           </article>
         </section>
       </div>
+
+      <section class="panel section history-panel">
+        <div class="section-heading history-heading">
+          <div>
+            <h2>历史报告</h2>
+            <p id="historyStatus" class="status-text">正在读取历史报告...</p>
+          </div>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </section>
     </main>
 
     <main id="adminPage" class="page admin-page hidden">
@@ -466,6 +521,8 @@
         abnormalItems: [],
         interpretation: '',
         renderedInterpretationHtml: '',
+        reports: [],
+        activeReportId: '',
         jsonValid: false,
         isInterpreting: false
       }
@@ -688,6 +745,51 @@
         $('exportButton').disabled = false
       }
 
+      function formatDateTime(value) {
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return value || '-'
+        return date.toLocaleString('zh-CN', { hour12: false })
+      }
+
+      function renderHistoryList() {
+        if (!state.reports.length) {
+          $('historyStatus').textContent = '暂无历史报告'
+          $('historyList').innerHTML = ''
+          return
+        }
+
+        $('historyStatus').textContent = `共 ${state.reports.length} 条历史报告`
+        $('historyList').innerHTML = state.reports.map((report) => {
+          const active = report.id === state.activeReportId ? ' active' : ''
+          const abnormalCount = Array.isArray(report.abnormal_items) ? report.abnormal_items.length : 0
+          return `
+            <button class="history-item${active}" type="button" data-report-id="${escapeHtml(report.id)}">
+              <span class="history-title">${escapeHtml(report.patient_id)} · ${escapeHtml(report.test_name)}</span>
+              <span class="history-meta">${escapeHtml(formatDateTime(report.created_at))} · 异常 ${abnormalCount} 项 · 样本时间 ${escapeHtml(report.sample_time)}</span>
+            </button>
+          `
+        }).join('')
+      }
+
+      function showHistoryReport(reportId) {
+        const report = state.reports.find((item) => item.id === reportId)
+        if (!report) return
+        state.activeReportId = report.id
+        renderReport(report.interpretation, report.abnormal_items || [])
+        renderHistoryList()
+      }
+
+      async function refreshReports() {
+        try {
+          const data = await apiRequest('/api/reports')
+          state.reports = Array.isArray(data.reports) ? data.reports : []
+          renderHistoryList()
+        } catch {
+          $('historyStatus').textContent = '历史报告暂不可用'
+          $('historyList').innerHTML = ''
+        }
+      }
+
       function exportPdf() {
         if (!state.interpretation) return
         const html = state.renderedInterpretationHtml || buildInterpretationHtml(state.interpretation, state.abnormalItems)
@@ -742,6 +844,11 @@
           validateJsonInput()
         })
         $('jsonInput').addEventListener('input', validateJsonInput)
+        $('historyList').addEventListener('click', (event) => {
+          const item = event.target.closest('[data-report-id]')
+          if (!item) return
+          showHistoryReport(item.dataset.reportId)
+        })
         $('savePromptButton').addEventListener('click', async () => {
           const prompt = $('promptInput').value.trim()
           if (!prompt) {
@@ -790,9 +897,12 @@
           $('exportButton').disabled = true
           try {
             const data = await apiRequest('/api/interpret', { method: 'POST', body: JSON.stringify(report) })
+            state.activeReportId = data.id || ''
             renderReport(data.interpretation, data.abnormal_items || abnormalItems)
+            await refreshReports()
           } catch (error) {
             $('requestError').textContent = `${error.message}。已展示本地规则预解读，供前端验收。`
+            state.activeReportId = ''
             renderReport(fallbackInterpretation(report, abnormalItems), abnormalItems)
           } finally {
             state.isInterpreting = false
@@ -809,6 +919,7 @@
         validateJsonInput()
         initializePrompt()
         refreshKeyStatus()
+        refreshReports()
       }
 
       init()

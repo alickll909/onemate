@@ -117,6 +117,7 @@ def test_interpret_returns_clear_error_when_api_key_is_missing(
 
     assert response.status_code == 400
     assert response.json()["detail"] == "未配置 DeepSeek API Key"
+    assert client.get("/api/reports").json() == {"reports": []}
 
 
 def test_interpret_returns_ai_result_abnormal_items_and_disclaimer(
@@ -142,9 +143,65 @@ def test_interpret_returns_ai_result_abnormal_items_and_disclaimer(
 
     assert response.status_code == 200
     data = response.json()
+    assert data["id"] == "1"
+    assert data["test_name"] == report["test_name"]
+    assert data["patient_id"] == report["patient_id"]
+    assert data["sample_time"] == report["sample_time"]
     assert data["interpretation"].startswith("总体印象")
     assert [item["key"] for item in data["abnormal_items"]] == ["wbc", "hgb", "plt"]
     assert data["disclaimer"] == DISCLAIMER
+
+
+def test_interpret_saves_report_history(
+    client: TestClient,
+    sample_report: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_call_deepseek(**kwargs: Any) -> str:
+        return "总体印象：[[ABNORMAL:白细胞计数|12.5 10^9/L]] 升高。"
+
+    monkeypatch.setattr(main, "call_deepseek", fake_call_deepseek)
+    client.post("/api/key", json={"api_key": "sk-test"})
+    report = copy.deepcopy(sample_report)
+    report["results"]["wbc"]["value"] = 12.5
+
+    response = client.post("/api/interpret", json=report)
+    history = client.get("/api/reports")
+
+    assert response.status_code == 200
+    assert history.status_code == 200
+    reports = history.json()["reports"]
+    assert len(reports) == 1
+    assert reports[0]["id"] == response.json()["id"]
+    assert reports[0]["patient_id"] == report["patient_id"]
+    assert reports[0]["test_name"] == report["test_name"]
+    assert reports[0]["interpretation"].startswith("总体印象")
+    assert reports[0]["abnormal_items"]
+    assert reports[0]["disclaimer"] == DISCLAIMER
+
+
+def test_report_history_orders_latest_first_and_keeps_recent_twenty(
+    client: TestClient,
+    sample_report: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_call_deepseek(**kwargs: Any) -> str:
+        return f"报告 {kwargs['report']['patient_id']}"
+
+    monkeypatch.setattr(main, "call_deepseek", fake_call_deepseek)
+    client.post("/api/key", json={"api_key": "sk-test"})
+
+    for index in range(22):
+        report = copy.deepcopy(sample_report)
+        report["patient_id"] = f"P{index:04d}"
+        response = client.post("/api/interpret", json=report)
+        assert response.status_code == 200
+
+    reports = client.get("/api/reports").json()["reports"]
+
+    assert len(reports) == 20
+    assert reports[0]["patient_id"] == "P0021"
+    assert reports[-1]["patient_id"] == "P0002"
 
 
 def test_call_deepseek_returns_content(sample_report: dict[str, Any]) -> None:
