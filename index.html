@@ -807,6 +807,17 @@
         $('adminNav').classList.toggle('active', admin)
       }
 
+      function promptForApiKey(error) {
+        const message = error.message.includes('未配置')
+          ? '请先在管理配置中填写 DeepSeek API Key 后再提交解读。'
+          : `调用模型出错：${error.message}。请在管理配置中检查或重新填写 DeepSeek API Key。`
+        window.alert(message)
+        setPage('admin')
+        $('keyStatus').textContent = message
+        $('keyStatus').classList.remove('success')
+        $('apiKeyInput').focus()
+      }
+
       async function initializePrompt() {
         $('promptInput').value = state.prompt
         try {
@@ -901,9 +912,9 @@
             renderReport(data.interpretation, data.abnormal_items || abnormalItems)
             await refreshReports()
           } catch (error) {
-            $('requestError').textContent = `${error.message}。已展示本地规则预解读，供前端验收。`
+            $('requestError').textContent = `${error.message}。请配置或检查 DeepSeek API Key 后重试。`
             state.activeReportId = ''
-            renderReport(fallbackInterpretation(report, abnormalItems), abnormalItems)
+            promptForApiKey(error)
           } finally {
             state.isInterpreting = false
             $('loadingBox').classList.add('hidden')
