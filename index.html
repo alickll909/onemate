@@ -4,9 +4,647 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OneMate 血常规报告解读</title>
+    <style>
+      :root {
+        color: #17212b;
+        background: #edf3f5;
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 1120px;
+      }
+
+      button,
+      input,
+      textarea {
+        font: inherit;
+      }
+
+      .topbar {
+        align-items: center;
+        background: #ffffff;
+        border-bottom: 1px solid #d9e2e7;
+        display: flex;
+        height: 64px;
+        justify-content: space-between;
+        padding: 0 32px;
+      }
+
+      .brand {
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .nav {
+        display: flex;
+        gap: 10px;
+      }
+
+      .nav button {
+        background: transparent;
+        border: 0;
+        border-radius: 6px;
+        color: #536170;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 8px 12px;
+      }
+
+      .nav button.active {
+        background: #dff4f1;
+        color: #0d6868;
+      }
+
+      .page {
+        margin: 0 auto;
+        max-width: 1280px;
+        padding: 28px 32px 42px;
+      }
+
+      .panel {
+        background: #ffffff;
+        border: 1px solid #d9e2e7;
+        border-radius: 8px;
+        box-shadow: 0 10px 28px rgba(41, 58, 72, 0.08);
+      }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: minmax(480px, 0.95fr) minmax(560px, 1.05fr);
+        margin-top: 18px;
+      }
+
+      .section {
+        padding: 20px;
+      }
+
+      .section-heading,
+      .row-actions,
+      .report-meta {
+        align-items: center;
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+      }
+
+      h1,
+      h2 {
+        font-size: 20px;
+        letter-spacing: 0;
+        line-height: 1.25;
+        margin: 0;
+      }
+
+      textarea,
+      input {
+        background: #fbfdff;
+        border: 1px solid #cbd5dc;
+        border-radius: 6px;
+        color: #17212b;
+      }
+
+      textarea:focus,
+      input:focus {
+        border-color: #167d7f;
+        box-shadow: 0 0 0 3px rgba(22, 125, 127, 0.14);
+        outline: none;
+      }
+
+      .collapse-button {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        display: flex;
+        font-weight: 800;
+        justify-content: space-between;
+        padding: 16px 18px;
+        width: 100%;
+      }
+
+      .prompt-body {
+        border-top: 1px solid #e7edf0;
+        padding: 16px 18px;
+      }
+
+      .prompt-input {
+        line-height: 1.55;
+        min-height: 184px;
+        padding: 14px;
+        resize: vertical;
+        width: 100%;
+      }
+
+      .json-input {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 14px;
+        height: 504px;
+        line-height: 1.55;
+        margin: 18px 0 12px;
+        padding: 14px;
+        resize: vertical;
+        width: 100%;
+      }
+
+      .key-input {
+        height: 44px;
+        margin: 8px 0 18px;
+        padding: 0 12px;
+        width: 100%;
+      }
+
+      .primary-button,
+      .secondary-button,
+      .ghost-button {
+        border: 0;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 800;
+        min-height: 40px;
+        padding: 9px 14px;
+      }
+
+      .primary-button {
+        background: #167d7f;
+        color: #ffffff;
+      }
+
+      .secondary-button {
+        background: #263544;
+        color: #ffffff;
+      }
+
+      .ghost-button {
+        background: #edf3f5;
+        color: #294050;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      .status-text {
+        color: #657586;
+        margin: 0;
+      }
+
+      .success {
+        color: #0f766e;
+      }
+
+      .error-text {
+        color: #b42318;
+        font-weight: 800;
+        margin: 8px 0;
+      }
+
+      .empty-state,
+      .loading-box {
+        align-items: center;
+        background: #f4f8fa;
+        border: 1px dashed #b8c7cf;
+        border-radius: 8px;
+        color: #657586;
+        display: flex;
+        justify-content: center;
+        margin-top: 18px;
+        min-height: 520px;
+        padding: 24px;
+      }
+
+      .report-card {
+        background: #ffffff;
+        color: #17212b;
+        line-height: 1.75;
+        margin-top: 18px;
+        min-height: 520px;
+        padding: 4px 2px;
+      }
+
+      .report-meta {
+        border-bottom: 1px solid #e7edf0;
+        color: #536170;
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+      }
+
+      .abnormal-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .abnormal-chip,
+      .abnormal-text {
+        color: #d92d20;
+        font-weight: 800;
+      }
+
+      .abnormal-chip {
+        background: #fff1f0;
+        border: 1px solid #ffccc7;
+        border-radius: 6px;
+        padding: 5px 8px;
+      }
+
+      .disclaimer {
+        border-top: 1px solid #e7edf0;
+        color: #73808c;
+        font-size: 13px;
+        margin: 22px 0 0;
+        padding-top: 12px;
+      }
+
+      .key-badge {
+        background: #fff1f0;
+        border-radius: 999px;
+        color: #b42318;
+        font-weight: 800;
+        padding: 6px 10px;
+      }
+
+      .key-badge.configured {
+        background: #dff4f1;
+        color: #0f766e;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      @media print {
+        body {
+          background: #ffffff;
+          min-width: 0;
+        }
+
+        .topbar,
+        .prompt-panel,
+        .input-panel,
+        .result-actions,
+        .admin-page {
+          display: none !important;
+        }
+
+        .page,
+        .grid,
+        .section {
+          display: block;
+          margin: 0;
+          max-width: none;
+          padding: 0;
+        }
+
+        .panel {
+          border: 0;
+          box-shadow: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <header class="topbar">
+      <div class="brand">OneMate 血常规报告解读</div>
+      <nav class="nav">
+        <button id="homeNav" class="active" type="button">解读</button>
+        <button id="adminNav" type="button">管理配置</button>
+      </nav>
+    </header>
+
+    <main id="homePage" class="page">
+      <section class="panel prompt-panel">
+        <button id="promptToggle" class="collapse-button" type="button">
+          <span>System Prompt</span>
+          <span id="promptToggleLabel">收起</span>
+        </button>
+        <div id="promptBody" class="prompt-body">
+          <textarea id="promptInput" class="prompt-input" rows="9"></textarea>
+          <div class="row-actions">
+            <p id="promptStatus" class="status-text">正在读取 Prompt...</p>
+            <button id="savePromptButton" class="secondary-button" type="button">保存 Prompt</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section class="panel section input-panel">
+          <div class="section-heading">
+            <h1>血常规 JSON</h1>
+            <button id="loadExampleButton" class="ghost-button" type="button">载入示例</button>
+          </div>
+          <textarea id="jsonInput" class="json-input" spellcheck="false"></textarea>
+          <p id="jsonError" class="error-text"></p>
+          <button id="interpretButton" class="primary-button" type="button">提交解读</button>
+        </section>
+
+        <section class="panel section">
+          <div class="section-heading result-actions">
+            <h2>解读结果</h2>
+            <button id="exportButton" class="secondary-button" type="button" disabled>导出 PDF</button>
+          </div>
+          <div id="loadingBox" class="loading-box hidden">正在调用 AI 生成解读...</div>
+          <p id="requestError" class="error-text"></p>
+          <div id="emptyState" class="empty-state">提交血常规 JSON 后，解读内容会显示在这里。</div>
+          <article id="reportCard" class="report-card hidden">
+            <div class="report-meta">
+              <strong>OneMate AI 解读报告</strong>
+              <span id="exportTime"></span>
+            </div>
+            <div id="abnormalSummary" class="abnormal-summary"></div>
+            <div id="interpretationText"></div>
+            <p class="disclaimer">AI建议仅供参考，请以临床医生诊断为准。</p>
+          </article>
+        </section>
+      </div>
+    </main>
+
+    <main id="adminPage" class="page admin-page hidden">
+      <section class="panel section" style="max-width: 680px">
+        <div class="section-heading">
+          <h1>DeepSeek API Key</h1>
+          <span id="keyBadge" class="key-badge">未配置</span>
+        </div>
+        <label for="apiKeyInput" style="display:block;font-weight:800;margin-top:24px">API Key</label>
+        <input id="apiKeyInput" class="key-input" type="password" autocomplete="off" placeholder="sk-..." />
+        <div class="row-actions">
+          <p id="keyStatus" class="status-text">正在读取配置状态...</p>
+          <button id="saveKeyButton" class="primary-button" type="button">保存 Key</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const DISCLAIMER = 'AI建议仅供参考，请以临床医生诊断为准。'
+      const DEFAULT_PROMPT = `你是医智通 OneMate 的血常规报告解读智能体，面向临床医生提供辅助解读。
+
+任务：
+1. 根据用户提交的血常规 JSON 中每个指标的 reference_range 判断异常，数值低于下限或高于上限均为异常。
+2. 对每个异常项用通俗、审慎的中文解释可能临床意义，例如白细胞升高可能提示感染、炎症或应激反应。
+3. 异常项必须使用固定标记格式：[[ABNORMAL:指标名称|数值 单位]]，例如 [[ABNORMAL:白细胞计数|12.5 10^9/L]]。
+4. 严禁编造诊断、病因或治疗方案；无法确认时必须明确说明“仅凭血常规无法确认，需要结合病史、体征和其他检查”。
+5. 输出结构建议包含：总体印象、异常指标解读、建议关注、局限性说明。`
+
+      const exampleReport = {
+        test_name: 'Complete Blood Count',
+        patient_id: 'P0001',
+        sample_time: '2026-06-18T09:30:00+08:00',
+        results: {
+          wbc: { name: '白细胞计数', value: 12.5, unit: '10^9/L', reference_range: '3.5-9.5' },
+          rbc: { name: '红细胞计数', value: 4.68, unit: '10^12/L', reference_range: '4.3-5.8' },
+          hgb: { name: '血红蛋白', value: 108, unit: 'g/L', reference_range: '130-175' },
+          plt: { name: '血小板计数', value: 398, unit: '10^9/L', reference_range: '125-350' },
+          neut_percent: { name: '中性粒细胞百分比', value: 78.4, unit: '%', reference_range: '40-75' },
+          lymph_percent: { name: '淋巴细胞百分比', value: 16.1, unit: '%', reference_range: '20-50' }
+        }
+      }
+
+      const state = {
+        prompt: localStorage.getItem('onemate_prompt') || DEFAULT_PROMPT,
+        apiKeyConfigured: false,
+        abnormalItems: [],
+        interpretation: ''
+      }
+
+      const $ = (id) => document.getElementById(id)
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;')
+      }
+
+      function escapeRegExp(value) {
+        return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      }
+
+      async function apiRequest(path, options = {}) {
+        const response = await fetch(path, {
+          headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+          ...options
+        })
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(data.detail || '请求失败，请稍后重试')
+        return data
+      }
+
+      function parseReferenceRange(rawRange) {
+        if (typeof rawRange !== 'string') return null
+        const normalized = rawRange.replaceAll('－', '-').replaceAll('—', '-').replaceAll('~', '-').replaceAll('～', '-')
+        const match = normalized.match(/(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)/)
+        if (!match) return null
+        const first = Number(match[1])
+        const second = Number(match[2])
+        return first <= second ? [first, second] : [second, first]
+      }
+
+      function validateReportShape(report) {
+        for (const field of ['test_name', 'patient_id', 'sample_time', 'results']) {
+          if (!(field in report)) throw new Error(`缺少顶层字段: ${field}`)
+        }
+        if (!report.results || typeof report.results !== 'object' || Array.isArray(report.results)) {
+          throw new Error('results 必须是对象')
+        }
+        for (const [key, item] of Object.entries(report.results)) {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error(`指标 ${key} 必须是对象`)
+          for (const field of ['name', 'value', 'unit', 'reference_range']) {
+            if (!(field in item)) throw new Error(`指标 ${key} 缺少字段: ${field}`)
+          }
+          if (Number.isNaN(Number(item.value))) throw new Error(`指标 ${key} 的 value 必须是数值`)
+        }
+      }
+
+      function detectAbnormalItems(report) {
+        return Object.entries(report.results).flatMap(([key, item]) => {
+          const range = parseReferenceRange(item.reference_range)
+          if (!range) return []
+          const value = Number(item.value)
+          if (value >= range[0] && value <= range[1]) return []
+          return [{
+            key,
+            name: String(item.name),
+            value,
+            unit: String(item.unit),
+            reference_range: String(item.reference_range),
+            direction: value < range[0] ? 'low' : 'high'
+          }]
+        })
+      }
+
+      function validateJsonInput() {
+        const raw = $('jsonInput').value.trim()
+        if (!raw) {
+          $('jsonError').textContent = '请输入血常规 JSON'
+          $('interpretButton').disabled = true
+          return null
+        }
+        try {
+          const report = JSON.parse(raw)
+          validateReportShape(report)
+          $('jsonError').textContent = ''
+          $('interpretButton').disabled = false
+          return report
+        } catch (error) {
+          $('jsonError').textContent = error.message
+          $('interpretButton').disabled = true
+          return null
+        }
+      }
+
+      function fallbackInterpretation(report, abnormalItems) {
+        if (!abnormalItems.length) {
+          return '总体印象：本次血常规 JSON 中可解析参考范围的指标暂未发现超出参考范围的异常项。\\n\\n建议关注：仍需结合患者症状、体征、病史及其他检查综合判断。'
+        }
+        const lines = abnormalItems.map((item) => {
+          const trend = item.direction === 'high' ? '高于' : '低于'
+          return `[[ABNORMAL:${item.name}|${item.value} ${item.unit}]] ${trend}参考范围（${item.reference_range}）。仅凭血常规不能确认具体诊断，需要结合病史、体征和其他检查。`
+        })
+        return `总体印象：发现 ${abnormalItems.length} 项可解析异常指标。\\n\\n异常指标解读：\\n${lines.join('\\n')}\\n\\n建议关注：请结合临床表现复核检验结果，并由临床医生综合判断。`
+      }
+
+      function renderReport(interpretation, abnormalItems) {
+        state.interpretation = interpretation
+        state.abnormalItems = abnormalItems
+        $('exportTime').textContent = `导出时间：${new Date().toLocaleString('zh-CN', { hour12: false })}`
+        $('abnormalSummary').innerHTML = abnormalItems.map((item) => (
+          `<span class="abnormal-chip">[异常] ${escapeHtml(item.name)} ${escapeHtml(item.value)} ${escapeHtml(item.unit)}</span>`
+        )).join('')
+
+        let html = escapeHtml(interpretation)
+        html = html.replace(/\[\[ABNORMAL:([^|\]]+)\|([^\]]+)\]\]/g, '<span class="abnormal-text">[异常] $1 $2</span>')
+        for (const item of abnormalItems) {
+          const escapedName = escapeHtml(item.name)
+          if (!html.includes(`[异常] ${escapedName}`)) {
+            html = html.replace(new RegExp(escapeRegExp(escapedName), 'g'), `<span class="abnormal-text">[异常] ${escapedName}</span>`)
+          }
+        }
+        $('interpretationText').innerHTML = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />')
+        $('emptyState').classList.add('hidden')
+        $('reportCard').classList.remove('hidden')
+        $('exportButton').disabled = false
+      }
+
+      function setPage(page) {
+        const admin = page === 'admin'
+        $('homePage').classList.toggle('hidden', admin)
+        $('adminPage').classList.toggle('hidden', !admin)
+        $('homeNav').classList.toggle('active', !admin)
+        $('adminNav').classList.toggle('active', admin)
+      }
+
+      async function initializePrompt() {
+        $('promptInput').value = state.prompt
+        try {
+          const data = await apiRequest('/api/prompt')
+          state.prompt = data.prompt
+          $('promptInput').value = data.prompt
+          $('promptStatus').textContent = 'Prompt 已从服务端加载'
+          $('promptStatus').classList.add('success')
+        } catch {
+          $('promptStatus').textContent = '使用本地 Prompt，服务端可用后可同步保存'
+        }
+      }
+
+      async function refreshKeyStatus() {
+        try {
+          const data = await apiRequest('/api/key')
+          state.apiKeyConfigured = data.configured
+          $('keyBadge').textContent = data.configured ? '已配置' : '未配置'
+          $('keyBadge').classList.toggle('configured', data.configured)
+          $('keyStatus').textContent = data.configured ? '当前服务端会话已有 API Key' : '请填写 API Key 后保存'
+        } catch {
+          $('keyStatus').textContent = '服务端未启动时无法保存 Key'
+        }
+      }
+
+      function bindEvents() {
+        $('homeNav').addEventListener('click', () => setPage('home'))
+        $('adminNav').addEventListener('click', () => setPage('admin'))
+        $('promptToggle').addEventListener('click', () => {
+          const hidden = $('promptBody').classList.toggle('hidden')
+          $('promptToggleLabel').textContent = hidden ? '展开' : '收起'
+        })
+        $('loadExampleButton').addEventListener('click', () => {
+          $('jsonInput').value = JSON.stringify(exampleReport, null, 2)
+          validateJsonInput()
+        })
+        $('jsonInput').addEventListener('input', validateJsonInput)
+        $('savePromptButton').addEventListener('click', async () => {
+          const prompt = $('promptInput').value.trim()
+          if (!prompt) {
+            $('promptStatus').textContent = 'Prompt 不能为空'
+            $('promptStatus').classList.remove('success')
+            return
+          }
+          state.prompt = prompt
+          localStorage.setItem('onemate_prompt', prompt)
+          try {
+            await apiRequest('/api/prompt', { method: 'POST', body: JSON.stringify({ prompt }) })
+            $('promptStatus').textContent = 'Prompt 已保存到服务端和本地'
+          } catch {
+            $('promptStatus').textContent = 'Prompt 已保存到本地；服务端未同步'
+          }
+          $('promptStatus').classList.add('success')
+        })
+        $('saveKeyButton').addEventListener('click', async () => {
+          const apiKey = $('apiKeyInput').value.trim()
+          if (!apiKey) {
+            $('keyStatus').textContent = 'API Key 不能为空'
+            return
+          }
+          try {
+            await apiRequest('/api/key', { method: 'POST', body: JSON.stringify({ api_key: apiKey }) })
+            $('apiKeyInput').value = ''
+            await refreshKeyStatus()
+            $('keyStatus').textContent = 'API Key 已保存到服务端内存 DB'
+            $('keyStatus').classList.add('success')
+          } catch (error) {
+            $('keyStatus').textContent = error.message
+            $('keyStatus').classList.remove('success')
+          }
+        })
+        $('interpretButton').addEventListener('click', async () => {
+          const report = validateJsonInput()
+          if (!report) return
+          const abnormalItems = detectAbnormalItems(report)
+          $('requestError').textContent = ''
+          $('loadingBox').classList.remove('hidden')
+          $('emptyState').classList.add('hidden')
+          $('reportCard').classList.add('hidden')
+          $('exportButton').disabled = true
+          try {
+            const data = await apiRequest('/api/interpret', { method: 'POST', body: JSON.stringify(report) })
+            renderReport(data.interpretation, data.abnormal_items || abnormalItems)
+          } catch (error) {
+            $('requestError').textContent = `${error.message}。已展示本地规则预解读，供前端验收。`
+            renderReport(fallbackInterpretation(report, abnormalItems), abnormalItems)
+          } finally {
+            $('loadingBox').classList.add('hidden')
+          }
+        })
+        $('exportButton').addEventListener('click', () => window.print())
+      }
+
+      function init() {
+        $('jsonInput').value = JSON.stringify(exampleReport, null, 2)
+        bindEvents()
+        validateJsonInput()
+        initializePrompt()
+        refreshKeyStatus()
+      }
+
+      init()
+    </script>
   </body>
 </html>
