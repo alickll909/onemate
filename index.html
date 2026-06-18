@@ -465,7 +465,9 @@
         apiKeyConfigured: false,
         abnormalItems: [],
         interpretation: '',
-        renderedInterpretationHtml: ''
+        renderedInterpretationHtml: '',
+        jsonValid: false,
+        isInterpreting: false
       }
 
       const $ = (id) => document.getElementById(id)
@@ -536,22 +538,30 @@
         })
       }
 
+      function syncInterpretButton() {
+        $('interpretButton').disabled = state.isInterpreting || !state.jsonValid
+        $('interpretButton').textContent = state.isInterpreting ? '解读中...' : '提交解读'
+      }
+
       function validateJsonInput() {
         const raw = $('jsonInput').value.trim()
         if (!raw) {
           $('jsonError').textContent = '请输入血常规 JSON'
-          $('interpretButton').disabled = true
+          state.jsonValid = false
+          syncInterpretButton()
           return null
         }
         try {
           const report = JSON.parse(raw)
           validateReportShape(report)
           $('jsonError').textContent = ''
-          $('interpretButton').disabled = false
+          state.jsonValid = true
+          syncInterpretButton()
           return report
         } catch (error) {
           $('jsonError').textContent = error.message
-          $('interpretButton').disabled = true
+          state.jsonValid = false
+          syncInterpretButton()
           return null
         }
       }
@@ -769,6 +779,9 @@
         $('interpretButton').addEventListener('click', async () => {
           const report = validateJsonInput()
           if (!report) return
+          if (state.isInterpreting) return
+          state.isInterpreting = true
+          syncInterpretButton()
           const abnormalItems = detectAbnormalItems(report)
           $('requestError').textContent = ''
           $('loadingBox').classList.remove('hidden')
@@ -782,7 +795,9 @@
             $('requestError').textContent = `${error.message}。已展示本地规则预解读，供前端验收。`
             renderReport(fallbackInterpretation(report, abnormalItems), abnormalItems)
           } finally {
+            state.isInterpreting = false
             $('loadingBox').classList.add('hidden')
+            validateJsonInput()
           }
         })
         $('exportButton').addEventListener('click', exportPdf)
