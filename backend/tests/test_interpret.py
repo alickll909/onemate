@@ -104,6 +104,8 @@ def test_prompt_defaults_to_medical_safety_requirements(client: TestClient) -> N
     assert prompt == DEFAULT_SYSTEM_PROMPT
     assert "严禁编造诊断" in prompt
     assert "reference_range" in prompt
+    assert "异常检测列表" in prompt
+    assert "白细胞升高可能提示存在感染" in prompt
     assert "[[ABNORMAL:指标名称|数值 单位]]" in prompt
 
 

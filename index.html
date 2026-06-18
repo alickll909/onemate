@@ -81,6 +81,12 @@
         margin-top: 18px;
       }
 
+      .admin-stack {
+        display: grid;
+        gap: 18px;
+        max-width: 880px;
+      }
+
       .section {
         padding: 20px;
       }
@@ -236,6 +242,50 @@
         padding-bottom: 12px;
       }
 
+      .interpretation-content h3,
+      .interpretation-content h4 {
+        color: #17212b;
+        line-height: 1.35;
+        margin: 22px 0 8px;
+      }
+
+      .interpretation-content h3 {
+        font-size: 18px;
+      }
+
+      .interpretation-content h4 {
+        font-size: 16px;
+      }
+
+      .interpretation-content p {
+        margin: 10px 0;
+      }
+
+      .interpretation-content ul,
+      .interpretation-content ol {
+        margin: 10px 0 14px 22px;
+        padding: 0;
+      }
+
+      .interpretation-content li {
+        margin: 6px 0;
+        padding-left: 2px;
+      }
+
+      .interpretation-content hr {
+        border: 0;
+        border-top: 1px solid #e7edf0;
+        margin: 18px 0;
+      }
+
+      .interpretation-content code {
+        background: #edf3f5;
+        border-radius: 4px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.92em;
+        padding: 1px 4px;
+      }
+
       .abnormal-summary {
         display: flex;
         flex-wrap: wrap;
@@ -321,20 +371,6 @@
     </header>
 
     <main id="homePage" class="page">
-      <section class="panel prompt-panel">
-        <button id="promptToggle" class="collapse-button" type="button">
-          <span>System Prompt</span>
-          <span id="promptToggleLabel">收起</span>
-        </button>
-        <div id="promptBody" class="prompt-body">
-          <textarea id="promptInput" class="prompt-input" rows="9"></textarea>
-          <div class="row-actions">
-            <p id="promptStatus" class="status-text">正在读取 Prompt...</p>
-            <button id="savePromptButton" class="secondary-button" type="button">保存 Prompt</button>
-          </div>
-        </div>
-      </section>
-
       <div class="grid">
         <section class="panel section input-panel">
           <div class="section-heading">
@@ -368,18 +404,34 @@
     </main>
 
     <main id="adminPage" class="page admin-page hidden">
-      <section class="panel section" style="max-width: 680px">
-        <div class="section-heading">
-          <h1>DeepSeek API Key</h1>
-          <span id="keyBadge" class="key-badge">未配置</span>
-        </div>
-        <label for="apiKeyInput" style="display:block;font-weight:800;margin-top:24px">API Key</label>
-        <input id="apiKeyInput" class="key-input" type="password" autocomplete="off" placeholder="sk-..." />
-        <div class="row-actions">
-          <p id="keyStatus" class="status-text">正在读取配置状态...</p>
-          <button id="saveKeyButton" class="primary-button" type="button">保存 Key</button>
-        </div>
-      </section>
+      <div class="admin-stack">
+        <section class="panel section">
+          <div class="section-heading">
+            <h1>DeepSeek API Key</h1>
+            <span id="keyBadge" class="key-badge">未配置</span>
+          </div>
+          <label for="apiKeyInput" style="display:block;font-weight:800;margin-top:24px">API Key</label>
+          <input id="apiKeyInput" class="key-input" type="password" autocomplete="off" placeholder="sk-..." />
+          <div class="row-actions">
+            <p id="keyStatus" class="status-text">正在读取配置状态...</p>
+            <button id="saveKeyButton" class="primary-button" type="button">保存 Key</button>
+          </div>
+        </section>
+
+        <section class="panel prompt-panel">
+          <button id="promptToggle" class="collapse-button" type="button">
+            <span>System Prompt</span>
+            <span id="promptToggleLabel">收起</span>
+          </button>
+          <div id="promptBody" class="prompt-body">
+            <textarea id="promptInput" class="prompt-input" rows="9"></textarea>
+            <div class="row-actions">
+              <p id="promptStatus" class="status-text">正在读取 Prompt...</p>
+              <button id="savePromptButton" class="secondary-button" type="button">保存 Prompt</button>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <script>
@@ -388,10 +440,11 @@
 
 任务：
 1. 根据用户提交的血常规 JSON 中每个指标的 reference_range 判断异常，数值低于下限或高于上限均为异常。
-2. 对每个异常项用通俗、审慎的中文解释可能临床意义，例如白细胞升高可能提示感染、炎症或应激反应。
-3. 异常项必须使用固定标记格式：[[ABNORMAL:指标名称|数值 单位]]，例如 [[ABNORMAL:白细胞计数|12.5 10^9/L]]。
-4. 严禁编造诊断、病因或治疗方案；无法确认时必须明确说明“仅凭血常规无法确认，需要结合病史、体征和其他检查”。
-5. 输出结构建议包含：总体印象、异常指标解读、建议关注、局限性说明。`
+2. 输出中必须包含“异常检测列表”，逐条列出异常指标、升高/降低方向、可能提示意义；例如“白细胞升高可能提示存在感染、炎症或应激反应”。
+3. 对每个异常项用通俗、审慎的中文解释可能临床意义，例如白细胞升高可能提示感染、炎症或应激反应。
+4. 异常项必须使用固定标记格式：[[ABNORMAL:指标名称|数值 单位]]，例如 [[ABNORMAL:白细胞计数|12.5 10^9/L]]。
+5. 严禁编造诊断、病因或治疗方案；无法确认时必须明确说明“仅凭血常规无法确认，需要结合病史、体征和其他检查”。
+6. 输出结构建议包含：总体印象、异常检测列表、异常指标解读、建议关注、局限性说明。`
 
       const exampleReport = {
         test_name: 'Complete Blood Count',
@@ -411,7 +464,8 @@
         prompt: localStorage.getItem('onemate_prompt') || DEFAULT_PROMPT,
         apiKeyConfigured: false,
         abnormalItems: [],
-        interpretation: ''
+        interpretation: '',
+        renderedInterpretationHtml: ''
       }
 
       const $ = (id) => document.getElementById(id)
@@ -513,6 +567,100 @@
         return `总体印象：发现 ${abnormalItems.length} 项可解析异常指标。\\n\\n异常指标解读：\\n${lines.join('\\n')}\\n\\n建议关注：请结合临床表现复核检验结果，并由临床医生综合判断。`
       }
 
+      function renderInlineMarkdown(text) {
+        return escapeHtml(text)
+          .replace(/\[\[ABNORMAL:([^|\]]+)\|([^\]]+)\]\]/g, '<span class="abnormal-text">[异常] $1 $2</span>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+      }
+
+      function renderMarkdownToHtml(markdown) {
+        const lines = markdown.replace(/\r\n/g, '\n').split('\n')
+        const html = []
+        const paragraph = []
+        let listType = ''
+
+        const closeList = () => {
+          if (listType) {
+            html.push(`</${listType}>`)
+            listType = ''
+          }
+        }
+        const flushParagraph = () => {
+          if (paragraph.length) {
+            html.push(`<p>${paragraph.map(renderInlineMarkdown).join(' ')}</p>`)
+            paragraph.length = 0
+          }
+        }
+        const openList = (type) => {
+          if (listType !== type) {
+            closeList()
+            html.push(`<${type}>`)
+            listType = type
+          }
+        }
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+
+          if (!trimmed) {
+            flushParagraph()
+            closeList()
+            continue
+          }
+
+          if (/^-{3,}$/.test(trimmed)) {
+            flushParagraph()
+            closeList()
+            html.push('<hr />')
+            continue
+          }
+
+          const heading = trimmed.match(/^(#{1,4})\s+(.+)$/)
+          if (heading) {
+            flushParagraph()
+            closeList()
+            const level = Math.min(heading[1].length + 2, 4)
+            html.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`)
+            continue
+          }
+
+          const orderedItem = trimmed.match(/^\d+[.)]\s+(.+)$/)
+          if (orderedItem) {
+            flushParagraph()
+            openList('ol')
+            html.push(`<li>${renderInlineMarkdown(orderedItem[1])}</li>`)
+            continue
+          }
+
+          const unorderedItem = trimmed.match(/^[-*]\s+(.+)$/)
+          if (unorderedItem) {
+            flushParagraph()
+            openList('ul')
+            html.push(`<li>${renderInlineMarkdown(unorderedItem[1])}</li>`)
+            continue
+          }
+
+          closeList()
+          paragraph.push(trimmed)
+        }
+
+        flushParagraph()
+        closeList()
+        return html.join('')
+      }
+
+      function buildInterpretationHtml(interpretation, abnormalItems) {
+        let html = renderMarkdownToHtml(interpretation)
+        for (const item of abnormalItems) {
+          const escapedName = escapeHtml(item.name)
+          if (!html.includes(`[异常] ${escapedName}`)) {
+            html = html.replace(new RegExp(escapeRegExp(escapedName), 'g'), `<span class="abnormal-text">[异常] ${escapedName}</span>`)
+          }
+        }
+        return html
+      }
+
       function renderReport(interpretation, abnormalItems) {
         state.interpretation = interpretation
         state.abnormalItems = abnormalItems
@@ -521,18 +669,22 @@
           `<span class="abnormal-chip">[异常] ${escapeHtml(item.name)} ${escapeHtml(item.value)} ${escapeHtml(item.unit)}</span>`
         )).join('')
 
-        let html = escapeHtml(interpretation)
-        html = html.replace(/\[\[ABNORMAL:([^|\]]+)\|([^\]]+)\]\]/g, '<span class="abnormal-text">[异常] $1 $2</span>')
-        for (const item of abnormalItems) {
-          const escapedName = escapeHtml(item.name)
-          if (!html.includes(`[异常] ${escapedName}`)) {
-            html = html.replace(new RegExp(escapeRegExp(escapedName), 'g'), `<span class="abnormal-text">[异常] ${escapedName}</span>`)
-          }
-        }
-        $('interpretationText').innerHTML = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />')
+        const html = buildInterpretationHtml(interpretation, abnormalItems)
+        state.renderedInterpretationHtml = html
+        $('interpretationText').classList.add('interpretation-content')
+        $('interpretationText').innerHTML = html
         $('emptyState').classList.add('hidden')
         $('reportCard').classList.remove('hidden')
         $('exportButton').disabled = false
+      }
+
+      function exportPdf() {
+        if (!state.interpretation) return
+        const html = state.renderedInterpretationHtml || buildInterpretationHtml(state.interpretation, state.abnormalItems)
+        state.renderedInterpretationHtml = html
+        $('interpretationText').classList.add('interpretation-content')
+        $('interpretationText').innerHTML = html
+        window.print()
       }
 
       function setPage(page) {
@@ -633,7 +785,7 @@
             $('loadingBox').classList.add('hidden')
           }
         })
-        $('exportButton').addEventListener('click', () => window.print())
+        $('exportButton').addEventListener('click', exportPdf)
       }
 
       function init() {
